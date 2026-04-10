@@ -1,0 +1,252 @@
+---
+title: "HoshiMap - Local Version"
+format: html
+server: shiny
+---
+
+```{r}
+if (!require("pacman")) install.packages("pacman")
+pacman::p_load(terra, sf, leaflet, shiny, shinythemes, bslib)
+
+# ========================== BASE PATH ==========================
+base_path <- "Drive"
+
+# ===================== PERFORMANCE SETTINGS ====================
+VIS_FACT <- 4
+
+# ========================== FUNCTIONS ==========================
+
+load_raster_local <- function(folder, prefix, pref) {
+  path <- file.path(base_path, folder, paste0(prefix, pref, ".tif"))
+  if (!file.exists(path)) stop(paste("Missing file:", path))
+  rast(path)
+}
+
+load_hillshade_local <- function(folder, prefix, pref) {
+  path <- file.path(base_path, folder, paste0(prefix, pref, ".tif"))
+  if (!file.exists(path)) return(NULL)
+  rast(path)
+}
+
+load_contour_local <- function(folder, prefix, pref) {
+  path <- file.path(base_path, folder, paste0(prefix, pref, ".shp"))
+  if (!file.exists(path)) return(NULL)
+  st_read(path, quiet = TRUE)
+}
+
+landuse_mask <- function(r) {
+  exclude <- c(1,2,6,7,8,9,11)
+  !(r %in% exclude)
+}
+
+# ============================ UI ===============================
+
+ui <- fluidPage(
+  theme = bs_theme(
+    bg = "#0B0C10",
+    fg = "#FFFFFF",
+    primary = "#FFD700",
+    base_font = font_google("Orbitron")
+  ),
+  
+  titlePanel("🌌 HoshiMap | Local Version"),
+  
+  sidebarLayout(
+    sidebarPanel(
+      selectInput("pref", "Prefecture", choices = NULL),
+      sliderInput("access", "Max Travel Time (minutes)", 0, 120, 45),
+      sliderInput("optical", "Max Optical Depth", 0, 5, 0.5),
+      sliderInput("light", "Max Light Pollution", 0, 100, 30),
+      sliderInput("sky", "Min Sky View", 0, 1, 0.5)
+    ),
+    
+    mainPanel(
+      leafletOutput("map", height = 700)
+    )
+  )
+)
+
+# ============================ SERVER ===========================
+
+server <- function(input, output, session) {
+  
+# ========================== PREF LIST ==========================
+  prefs <- gsub(
+    "Accessibility_|\\.tif",
+    "",
+    list.files(file.path(base_path, "Accessibility_prefectures"), pattern = "\\.tif$")
+  )
+  
+  updateSelectInput(session, "pref", choices = prefs)
+  
+# ======================== OBSERVATORIES ========================
+  observatories <- read.csv(file.path(base_path, "Observatories.csv"), stringsAsFactors = FALSE)
+  
+  observatories$Longitude <- as.numeric(observatories$Longitude)
+  observatories$Latitude  <- as.numeric(observatories$Latitude)
+  
+  obs_pal <- colorFactor(
+    palette = c("#5B21B6", "#38BDF8"),
+    domain = unique(observatories$Type)
+  )
+  
+  obs_filtered <- reactive({
+    req(input$pref)
+    subset(observatories, Prefecture == input$pref)
+  })
+  
+# ============================= CACHE ===========================
+  raster_cache <- reactiveVal(list())
+  contour_cache <- reactiveVal(list())
+  
+  get_data <- function(pref) {
+    cache <- raster_cache()
+    
+    if (!pref %in% names(cache)) {
+      showNotification("Loading data...", type = "message")
+      
+      cache[[pref]] <- list(
+        landuse   = load_raster_local("Landuse_prefectures", "Landuse_", pref),
+        access    = load_raster_local("Accessibility_prefectures", "Accessibility_", pref),
+        opt       = load_raster_local("OpticalDepth_prefectures", "OpticalDepth_", pref),
+        light     = load_raster_local("Lightpollution_prefectures", "Lightpollution_", pref),
+        sky       = load_raster_local("Skyview_prefectures", "Skyview_", pref),
+        hillshade = load_hillshade_local("Hillshade_prefectures", "Hillshade_", pref)
+      )
+      
+      raster_cache(cache)
+    }
+    
+    cache[[pref]]
+  }
+  
+  get_contour <- function(pref) {
+    cache <- contour_cache()
+    
+    if (!pref %in% names(cache)) {
+      cache[[pref]] <- load_contour_local("Shapefile_prefectures", "Shp_", pref)
+      contour_cache(cache)
+    }
+    
+    cache[[pref]]
+  }
+  
+# =========================== ANALYSIS ==========================
+  result_raster <- reactive({
+    req(input$pref)
+    
+    r <- get_data(input$pref)
+    req(r$landuse, r$access, r$opt, r$light, r$sky)
+    
+    lu_mask <- landuse_mask(r$landuse)
+    
+    valid <- lu_mask &
+      (r$access <= input$access) &
+      (r$opt <= input$optical) &
+      (r$light <= input$light) &
+      (r$sky >= input$sky)
+    
+    mask(r$access, valid, maskvalues = 0)
+  })
+  
+# ======================== VISUALIZATION ========================
+  viz_rasters <- reactive({
+    req(input$pref)
+    
+    r <- get_data(input$pref)
+    res <- result_raster()
+    
+    hill <- r$hillshade
+    if (!is.null(hill)) {
+      hill <- aggregate(hill, fact = VIS_FACT, fun = mean, na.rm = TRUE)
+    }
+    
+    res_viz <- aggregate(res, fact = VIS_FACT, fun = mean, na.rm = TRUE)
+    
+    list(
+      result = res_viz,
+      hillshade = hill
+    )
+  })
+  
+# ============================= MAP =============================
+  output$map <- renderLeaflet({
+    
+    viz <- viz_rasters()
+    contour <- get_contour(input$pref)
+    obs <- obs_filtered()
+    
+    r <- viz$result
+    hill <- viz$hillshade
+    
+    vals <- values(r)
+    vals <- vals[!is.na(vals)]
+    
+    pal <- colorNumeric(
+      "YlGnBu",
+      domain = vals,
+      na.color = "transparent"
+    )
+    
+    m <- leaflet() %>%
+      addProviderTiles("CartoDB.DarkMatter")
+    
+    # Hillshade
+    if (!is.null(hill)) {
+      m <- m %>%
+        addRasterImage(hill, opacity = 0.35, project = TRUE)
+    }
+    
+    # Raster
+    m <- m %>%
+      addRasterImage(r, colors = pal, opacity = 0.8, project = TRUE)
+    
+    # Contours
+    if (!is.null(contour)) {
+      m <- m %>%
+        addPolygons(
+          data = contour,
+          color = "white",
+          weight = 1.5,
+          fill = FALSE
+        )
+    }
+    
+# ========================= OBSERVATORIES =======================
+    if (nrow(obs) > 0) {
+      m <- m %>%
+        addCircleMarkers(
+          data = obs,
+          lng = ~Longitude,
+          lat = ~Latitude,
+          color = ~obs_pal(Type),
+          fillColor = ~obs_pal(Type),
+          fillOpacity = 0.9,
+          radius = 6,
+          stroke = TRUE,
+          weight = 1,
+          popup = ~paste0("<b>", Observatory, "</b><br>", Type)
+        )
+    }
+    
+# =========================== LEGENDS ===========================
+    m <- m %>%
+      addLegend(
+        pal = pal,
+        values = vals,
+        title = "Travel Time (minutes)",
+        position = "bottomleft"
+      ) %>%
+      addLegend(
+        position = "bottomright",
+        colors = c("#5B21B6", "#38BDF8"),
+        labels = c("Optical / Infrared", "Radio / Astronomical"),
+        title = "Observatory type"
+      )
+    
+    m
+  })
+}
+
+shinyApp(ui, server)
+```

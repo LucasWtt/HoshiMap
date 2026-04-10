@@ -1,0 +1,236 @@
+---
+title: "HoshiMap - Cloud Version"
+format: html
+editor: visual
+---
+
+## Cloud Version
+
+Quarto enables you to weave together content and executable code into a finished document. To learn
+
+```{r}
+if (!require("pacman")) install.packages("pacman")
+pacman::p_load(terra, sf, leaflet, shiny, shinythemes, bslib, googledrive)
+
+# ====================== PUBLIC DRIVE SETUP =====================
+drive_deauth() 
+drive_root_id <- as_id("1iwF9XNg6ltKaJH5gH9Hwz0whuSO3HgM7")
+
+# ===================== PERFORMANCE SETTINGS ====================
+VIS_FACT <- 4
+
+# ========================== FUNCTIONS ==========================
+
+get_public_drive_file <- function(subfolder_name, file_name) {
+  root_content <- drive_ls(drive_root_id)
+  target_folder <- root_content[root_content$name == subfolder_name, ]
+  if(nrow(target_folder) == 0) return(NULL)
+  
+  sub_content <- drive_ls(as_id(target_folder$id[1]))
+  target_file <- sub_content[sub_content$name == file_name, ]
+  if(nrow(target_file) == 0) return(NULL)
+  
+  temp_path <- file.path(tempdir(), file_name)
+  drive_download(as_id(target_file$id[1]), path = temp_path, overwrite = TRUE)
+  return(temp_path)
+}
+
+load_raster_drive <- function(folder, prefix, pref) {
+  fname <- paste0(prefix, pref, ".tif")
+  path <- get_public_drive_file(folder, fname)
+  if (is.null(path)) stop(paste("File not found:", fname))
+  rast(path)
+}
+
+load_hillshade_drive <- function(folder, prefix, pref) {
+  fname <- paste0(prefix, pref, ".tif")
+  path <- get_public_drive_file(folder, fname)
+  if (is.null(path)) return(NULL)
+  rast(path)
+}
+
+load_contour_drive <- function(folder, prefix, pref) {
+  extensions <- c(".shp", ".shx", ".dbf", ".prj")
+  base_name <- paste0(prefix, pref)
+  local_shp_path <- ""
+  
+  for (ext in extensions) {
+    fname <- paste0(base_name, ext)
+    p <- get_public_drive_file(folder, fname)
+    if (ext == ".shp") local_shp_path <- p
+  }
+  
+  if (local_shp_path == "" || !file.exists(local_shp_path)) return(NULL)
+  st_read(local_shp_path, quiet = TRUE)
+}
+
+landuse_mask <- function(r) {
+  exclude <- c(1,2,6,7,8,9,11)
+  !(r %in% exclude)
+}
+
+# ============================ UI ===============================
+
+ui <- fluidPage(
+  theme = bs_theme(
+    bg = "#0B0C10",
+    fg = "#FFFFFF",
+    primary = "#FFD700",
+    base_font = font_google("Orbitron")
+  ),
+  titlePanel("🌌 HoshiMap | Cloud Version"),
+  sidebarLayout(
+    sidebarPanel(
+      selectInput("pref", "Prefecture", choices = NULL),
+      sliderInput("access", "Max Travel Time (min)", 0, 120, 45),
+      sliderInput("optical", "Max Optical Depth", 0, 5, 0.5),
+      sliderInput("light", "Max Light Pollution", 0, 100, 30),
+      sliderInput("sky", "Min Sky View", 0, 1, 0.5)
+    ),
+    mainPanel(leafletOutput("map", height = 700))
+  )
+)
+
+# ============================ SERVER ===========================
+
+server <- function(input, output, session) {
+  
+  # Populate Prefectures
+  observe({
+    acc_folder <- drive_ls(drive_root_id, pattern = "Accessibility_prefectures")
+    if(nrow(acc_folder) > 0) {
+      files <- drive_ls(as_id(acc_folder$id[1]), pattern = "\\.tif$")
+      prefs <- gsub("Accessibility_|\\.tif", "", files$name)
+      updateSelectInput(session, "pref", choices = prefs)
+    }
+  })
+  
+  # Observatories Data
+  observatories_data <- reactive({
+    root_files <- drive_ls(drive_root_id)
+    csv_item <- root_files[root_files$name == "Observatories.csv", ]
+    if(nrow(csv_item) > 0) {
+      temp_csv <- file.path(tempdir(), "Observatories.csv")
+      drive_download(as_id(csv_item$id[1]), path = temp_csv, overwrite = TRUE)
+      df <- read.csv(temp_csv, stringsAsFactors = FALSE, fileEncoding = "UTF-8-BOM")
+      df$Type <- trimws(df$Type)
+      df <- df[!is.na(df$Longitude) & df$Longitude != "", ]
+      df$Longitude <- as.numeric(df$Longitude)
+      df$Latitude  <- as.numeric(df$Latitude)
+      return(df)
+    }
+    return(data.frame())
+  })
+  
+  raster_cache <- reactiveVal(list())
+  contour_cache <- reactiveVal(list())
+  
+  get_pref_data <- function(pref) {
+    cache <- raster_cache()
+    if (!pref %in% names(cache)) {
+      showNotification(paste("Streaming terrain and data for", pref), type = "message")
+      cache[[pref]] <- list(
+        landuse   = load_raster_drive("Landuse_prefectures", "Landuse_", pref),
+        access    = load_raster_drive("Accessibility_prefectures", "Accessibility_", pref),
+        opt       = load_raster_drive("OpticalDepth_prefectures", "OpticalDepth_", pref),
+        light     = load_raster_drive("Lightpollution_prefectures", "Lightpollution_", pref),
+        sky       = load_raster_drive("Skyview_prefectures", "Skyview_", pref),
+        hillshade = load_hillshade_drive("Hillshade_prefectures", "Hillshade_", pref)
+      )
+      raster_cache(cache)
+    }
+    cache[[pref]]
+  }
+
+  get_pref_contour <- function(pref) {
+    cache <- contour_cache()
+    if (!pref %in% names(cache)) {
+      cache[[pref]] <- load_contour_drive("Shapefile_prefectures", "Shp_", pref)
+      contour_cache(cache)
+    }
+    cache[[pref]]
+  }
+
+  # ========================= ANALYSIS ==========================
+  result_rasters <- reactive({
+    req(input$pref)
+    r <- get_pref_data(input$pref)
+    
+    mask_lu <- landuse_mask(r$landuse)
+    valid <- mask_lu & (r$access <= input$access) & (r$opt <= input$optical) & 
+             (r$light <= input$light) & (r$sky >= input$sky)
+    
+    res <- mask(r$access, valid, maskvalues = 0)
+    
+    # Process Hillshade
+    hill <- r$hillshade
+    if (!is.null(hill)) {
+      hill <- aggregate(hill, fact = VIS_FACT, fun = mean, na.rm = TRUE)
+    }
+    
+    list(
+      result = aggregate(res, fact = VIS_FACT, fun = mean, na.rm = TRUE),
+      hillshade = hill
+    )
+  })
+
+  # ============================ MAP ============================
+  output$map <- renderLeaflet({
+    req(input$pref)
+    
+    data_list <- result_rasters()
+    res_viz <- data_list$result
+    hill_viz <- data_list$hillshade
+    
+    contour <- get_pref_contour(input$pref)
+    obs <- observatories_data()
+    obs_sub <- subset(obs, Prefecture == input$pref)
+    
+    obs_types <- c("Optical / Infrared", "Radio / Astronomical")
+    obs_colors <- c("#5B21B6", "#38BDF8")
+    obs_pal <- colorFactor(palette = obs_colors, domain = obs_types, na.color = "#808080")
+    
+    pal <- colorNumeric("YlGnBu", domain = values(res_viz), na.color = "transparent")
+
+    m <- leaflet() %>%
+      addProviderTiles("CartoDB.DarkMatter")
+    
+    # Add Hillshade Overlay first (background)
+    if (!is.null(hill_viz)) {
+      m <- m %>% addRasterImage(hill_viz, opacity = 0.35, project = TRUE, colors = "Greys")
+    }
+    
+    # Add Analysis Raster
+    m <- m %>% addRasterImage(res_viz, colors = pal, opacity = 0.7, project = TRUE)
+    
+    # Add Boundary
+    if (!is.null(contour)) {
+      m <- m %>% addPolygons(
+        data = contour, color = "white", weight = 2, fillOpacity = 0
+      )
+    }
+
+    # Add Markers
+    if (nrow(obs_sub) > 0) {
+      m <- m %>% addCircleMarkers(
+        data = obs_sub, lng = ~Longitude, lat = ~Latitude,
+        color = ~obs_pal(Type), fillColor = ~obs_pal(Type),
+        radius = 6, fillOpacity = 0.9, stroke = TRUE, weight = 1,
+        popup = ~paste0("<b>", Observatory, "</b><br>", Type)
+      )
+    }
+
+    m %>%
+      addLegend(pal = pal, values = values(res_viz), title = "Travel Time (min)", position = "bottomleft") %>%
+      addLegend(
+        position = "bottomright",
+        pal = obs_pal,
+        values = obs_types,
+        title = "Observatory Type",
+        opacity = 1
+      )
+  })
+}
+
+shinyApp(ui, server)
+```

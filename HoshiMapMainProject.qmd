@@ -7,7 +7,7 @@ editor: visual
 
 # HoshiMap : Finding the best stargazing spots throughout Japan
 
-***GitHub** :* *https://github.com/LucasWtt/Hoshimap*
+***GitHub** :* *https://github.com/LucasWtt/HoshiMap*
 
 ***Google Drive Folder** : https://drive.google.com/drive/folders/1iwF9XNg6ltKaJH5gH9Hwz0whuSO3HgM7*
 
@@ -21,15 +21,17 @@ The second half of this work encompasses the code linked to the mapping tool its
 
 To measure the potential of the Japanese territory, four main factors where taken into account :
 
-**Light pollution** : Human activities have enormous impact on night time brightness. Cities and industrial operations transformed nocturnal landscape and strongly decreased the average quality of stargazing activities. Urban-oriented environments are highly affected by light pollution.
+**Light pollution** : Human activities have enormous impact on night time brightness. Cities and industrial operations transformed nocturnal landscape and strongly decreased the average quality of stargazing activities. Urban-oriented environments are highly affected by light pollution. The data was collected from the Earth Observation Group, that provides a monthly Visible Infrared Imaging Radiometer Suite dataset covering the globe.
 
-**Land use** : Different territory occupations present opportunities or limitations in regards to astronomical observations. Terrain environments such as forests or urban cities allow for less possibilities compared to croplands or bare soil.
+**Land use** : Different territory occupations present opportunities or limitations in regards to astronomical observations. Terrain environments such as forests or urban cities allow for less possibilities compared to croplands or bare soil. The land use factor is used to exclude soil occupations that are not intended to be considered as potential variables. This dataset was obtained from Jaxa's Public-health Monitor and Analysis Platform, in collaboration with the Advanced Land Observing Satellite (ALOS) project.
 
-**Sky openness** : In a country with a strong relief is less convenient than flat terrain to observe the horizon. Due to its active geomorphological processes, Japanese landscape is strongly impacted by this. Some valleys might have high quality sky darkness, but have a high proportion of its sky being covered by mountainside, restricting the window of observation.
+**Sky openness** : In a country with a strong relief is less convenient than flat terrain to observe the horizon. Due to its active geomorphological processes, Japanese landscape is strongly impacted by this. Some valleys might have high quality sky darkness, but have a high proportion of its sky being covered by mountainside, restricting the window of observation. Sky openness data was calculated based on the Digital Elevation Model (DEM) of Japan, available on Google Earth Engine.
 
-**Accessibility** : a
+**Accessibility** : Accessibility models the time required for individuals to reach their most accessible city, as of 2015. It was integrated in the model to allow users to exclude remote locations from their prefecture. The data comes from the University of Twente in the Nederlands (Nelson *et al.*, 2018).
 
-**Aerosol optical thickness** : a
+**Aerosol optical thickness** : Aerosol optical thickness acts as a proxy for atmospheric pollution. Aerosols floating in the air such as PM2.5 can be obersved
+
+The data was obtained through Jaxa's Earth-Graphy and originates from MODIS
 
 **Hillshade** :
 

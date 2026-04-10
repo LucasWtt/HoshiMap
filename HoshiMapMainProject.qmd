@@ -27,11 +27,19 @@ To measure the potential of the Japanese territory, four main factors where take
 
 **Sky openness** : In a country with a strong relief is less convenient than flat terrain to observe the horizon. Due to its active geomorphological processes, Japanese landscape is strongly impacted by this. Some valleys might have high quality sky darkness, but have a high proportion of its sky being covered by mountainside, restricting the window of observation.
 
-**Altitude** : Despite being less impactful than the other variables, altitude also influences the quality of stargazing. Atmospheric perturbations have a strong influence on telescope related activities. At an altitude of 1500 meters, the atmospheric pressure is only 85% of what it is at sea level. Moreover, lower atmosphere is generally turbulent due to the proximity with the ground and its vegetation. These factors can theoretically influence visibility up to 20%. This variable acts as a proxy for atmospheric stability.
-
 **Accessibility** : a
 
 **Aerosol optical thickness** : a
+
+**Hillshade** :
+
+**Altitude and Slope** : Despite being less impactful than the other variables, altitude also influences the quality of stargazing. Atmospheric perturbations have a strong influence on telescope related activities. At an altitude of 1500 meters, the atmospheric pressure is only 85% of what it is at sea level. Moreover, lower atmosphere is generally turbulent due to the proximity with the ground and its vegetation. These factors can theoretically influence visibility up to 20%. This variable acts as a proxy for atmospheric stability.
+
+Slope, even though it is highly related to altitude, has a completely different role in this field. It doesn't have a direct relationship with the atmosphere, but with the ground. Steep slope environments are generally viewed as noxious for astronomy related activities, instruments such as telescopes require a relatively flat area to be used.
+
+Despite their relationships with stargazing, altitude and slope have not been utilized in the version of HoshiMap released here. This is because these two variables are less vital to the subject, and limiting the number of variables taken into the computational power drastically increases the speed of rendering of HoshiMap. Slope itself appeared to be strongly correlated with sky openness. However, the data for both of those parameters is available in the Google Drive Folder.
+
+## Preprocessing code
 
 ```{r}
 # ==============================================================================
@@ -174,7 +182,11 @@ message("All preprocessing completed successfully.")
 
 ## RStudio Code (part 2) : Open source tool
 
-Now that the data have been cleaned,
+Now that the data have been cleaned, the following code is composed of two chunks
+
+Despite their relationships with stargazing, altitude and slope have not been utilized in the version of HoshiMap released here. This is because these two variables are less vital to the subject, and limiting the number of variables taken into the computational power drastically increases the speed of rendering of HoshiMap. Slope itself appeared to be strongly correlated with sky openness. However, the data for both of those parameters is available in the Google Drive Folder.
+
+## HoshiMap - Cloud Version
 
 ```{r}
 if (!require("pacman")) install.packages("pacman")
@@ -403,7 +415,7 @@ server <- function(input, output, session) {
 shinyApp(ui, server)
 ```
 
-AAAAA
+## HoshiMap - Local Version
 
 ```{r}
 if (!require("pacman")) install.packages("pacman")

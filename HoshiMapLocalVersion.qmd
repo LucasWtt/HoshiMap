@@ -4,6 +4,16 @@ format: html
 server: shiny
 ---
 
+## Local Version of HoshiMap
+
+This version is significantly faster than the cloud version, but requires the user to download the 10 files available on Google Drive and place them in a data folder named "Drive". There are around 12.3 GB of data in total. This configuration does not require any modification to the code afterward.
+
+More information regarding the project can be found in *HoshiMapMainProject* on GitHub.
+
+***GitHub** :* *https://github.com/LucasWtt/Hoshimap*
+
+***Google Drive Folder** : https://drive.google.com/drive/folders/1iwF9XNg6ltKaJH5gH9Hwz0whuSO3HgM7*
+
 ```{r}
 if (!require("pacman")) install.packages("pacman")
 pacman::p_load(terra, sf, leaflet, shiny, shinythemes, bslib)

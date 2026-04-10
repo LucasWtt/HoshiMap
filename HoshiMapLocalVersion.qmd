@@ -10,7 +10,7 @@ This version is significantly faster than the cloud version, but requires the us
 
 More information regarding the project can be found in *HoshiMapMainProject* on GitHub.
 
-***GitHub** :* *https://github.com/LucasWtt/Hoshimap*
+***GitHub** :* *https://github.com/LucasWtt/HoshiMap*
 
 ***Google Drive Folder** : https://drive.google.com/drive/folders/1iwF9XNg6ltKaJH5gH9Hwz0whuSO3HgM7*
 

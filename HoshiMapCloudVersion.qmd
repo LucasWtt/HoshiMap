@@ -4,9 +4,15 @@ format: html
 editor: visual
 ---
 
-## Cloud Version
+## Cloud Version of HoshiMap
 
-Quarto enables you to weave together content and executable code into a finished document. To learn
+This version can be used simply by executing the code. However, its processing time is longer than the local version, that uses data downloaded from the Google Drive database directly from local folders.
+
+More information regarding the project can be found in *HoshiMapMainProject* on GitHub.
+
+***GitHub** :* *https://github.com/LucasWtt/Hoshimap*
+
+***Google Drive Folder** : https://drive.google.com/drive/folders/1iwF9XNg6ltKaJH5gH9Hwz0whuSO3HgM7*
 
 ```{r}
 if (!require("pacman")) install.packages("pacman")

@@ -1,5 +1,5 @@
 # Hoshimap
-This project aims to highlight locations across Japan that are promissing for any stargazing activities, based on criteria thresholds set by the user. Everything is written using R.
+This project aims to highlight locations across Japan that are promissing for any stargazing activities, based on major criteria and thresholds set by the user. Everything is written using R.
 
 The repository is composed of :
   1 Quarto file being the project itself, which contains everything except the initial preprocessing code.

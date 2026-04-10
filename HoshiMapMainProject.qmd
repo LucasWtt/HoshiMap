@@ -1,17 +1,15 @@
 ---
 title: "HoshiMap"
-author: ""
+author: "Lucas Wautot"
 format: html
 editor: visual
 ---
 
-# Finding the best stargazing spots throughout Japan
+# HoshiMap : Finding the best stargazing spots throughout Japan
 
-*Advices : Cost distance / Points de cross-validation / literature / Air quality / Amateur database*
+***GitHub** :* *https://github.com/LucasWtt/Hoshimap*
 
-Hillshade + log scale + observatoires
-
-<https://drive.google.com/drive/folders/1iwF9XNg6ltKaJH5gH9Hwz0whuSO3HgM7>
+***Google Drive Folder** : https://drive.google.com/drive/folders/1iwF9XNg6ltKaJH5gH9Hwz0whuSO3HgM7*
 
 The objective of this report is to identify and highlight the promising places in any Japanese prefecture to perform astronomical observations.
 

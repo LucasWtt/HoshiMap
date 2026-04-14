@@ -9,7 +9,7 @@ The repository is composed of :
 Informations about the project itself (data origin, method followed, advised thresholds) are detailed in the HoshiMapMainProject quarto.
 
 
-List of raster values associated with land use coverages (JAXA Classification	Simplified Classification) :
+List of raster values associated with land use coverages (JAXA Simplified Classification) :
 
 Raster Value | Land Use Name
 1. Water	

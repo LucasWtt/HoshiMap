@@ -65,9 +65,9 @@ ui <- fluidPage(
     sidebarPanel(
       selectInput("pref", "Prefecture", choices = NULL),
       sliderInput("access", "Max Travel Time (minutes)", 0, 120, 45),
-      sliderInput("optical", "Max Optical Depth", 0, 5, 0.5),
-      sliderInput("light", "Max Light Pollution", 0, 100, 30),
-      sliderInput("sky", "Min Sky View", 0, 1, 0.5)
+      sliderInput("optical", "Max Optical Depth", 0, 4, 0.8, 0.1),
+      sliderInput("light", "Max Light Pollution", 0, 50, 20),
+      sliderInput("sky", "Min Sky View", 0, 1, 0.8)
     ),
     
     mainPanel(

@@ -1,6 +1,7 @@
 ---
-title: "HoshiMap"
-author: ""
+title: "HoshiMap - Main Project"
+course: "LGEO2185 - Advanced Geo-processing "
+author: "Lucas Wautot"
 format: html
 execute:
   eval: false
@@ -8,7 +9,7 @@ execute:
 
 :::::::: justify-text
 ::: {style="text-align: justify;"}
-## Finding the best stargazing spots throughout Japan
+## *Finding the best stargazing spots throughout Japan*
 
 ***GitHub** :* *https://github.com/LucasWtt/HoshiMap*
 
@@ -16,21 +17,27 @@ execute:
 
 The objective of this application is to identify and highlight the most promising places in any Japanese prefecture to conduct amateur astronomical observations. The quarto format offers a satisfying way to integrate text and code chunks, with this specific quarto being divided in three main parts. The first one describes the steps taken from data acquisition to cloud storage creation, and the second encompasses the app itself in two versions, either running on local or cloud data. Shiny has been used to run the app, and everything is written in R language and can be executed from RStudio.
 
+## *General Workflow*
+
+Here is an simplified image describing the workflow followed throughout the project :
+
+![](images/clipboard-1030658170.png)
+
 ## Part 1 : From raw data to cloud-available refined data
 
 To measure the potential of the Japanese territory for stargazing, multiple factors were taken into account. Here is a quick description of the parameters present in this project and their relationship with astronomical observations. A more technical description is provided after the pre-processing code chunk.
 
 ## *Variables taken into account*
 
-**Light pollution** : Human activities have enormous impact on night time brightness. Cities and industrial operations transformed nocturnal landscape and strongly decreased the average quality of stargazing experiences. Urban-oriented environments are highly affected by light pollution, while remote places in the countryside can enjoy a much more detailed night sky. The data for this factor was collected from the Earth Observation Group, that provides a monthly Visible Infrared Imaging Radiometer Suite dataset covering the globe. The one used in this version of HoshiMap is July 2024
+**Light pollution** : Human activities have enormous impact on night time brightness. Cities and industrial operations transformed nocturnal landscape and strongly decreased the average quality of stargazing experiences. Urban-oriented environments are highly affected by light pollution, while remote places in the countryside can enjoy a much more detailed night sky. The data for this factor was collected from the Earth Observation Group, that provides a monthly Visible Infrared Imaging Radiometer Suite dataset covering the globe (Falchi *et al.*, 2016). The one used in this version of HoshiMap is from July 2024.
 
-**Land use** : Different territory occupations present opportunities or limitations in regards to astronomical observations. Terrain environments such as forests or urban cities allow for less possibilities compared to croplands or bare soil. The land use factor is used to exclude soil occupations that are not intended to be considered as potential variables. This dataset was obtained from Jaxa's Public-health Monitor and Analysis Platform, in collaboration with the Advanced Land Observing Satellite (ALOS) project.
+**Land use** : Different territory occupations present opportunities or limitations in regards to astronomical observations. Terrain environments such as forests or urban cities allow for less possibilities compared to croplands or bare soil. The land use factor is used to exclude soil occupations that are not intended to be considered as potential variables. This dataset was obtained from Jaxa's Public-health Monitor and Analysis Platform (Hashimoto *et al.*, 2014*)*, in collaboration with the Advanced Land Observing Satellite (ALOS) project, the data is from 2024.
 
-**Sky openness** : In a country with a strong relief is less convenient than flat terrain to observe the horizon due to its active geomorphological processes, Japanese landscape is strongly impacted by this factor. Some valleys might have potential for high quality sky darkness, but have a high proportion of its sky being covered by mountainside, restricting the window of observation. Sky openness data, also called sky view factor, was calculated based on the Digital Elevation Model (DEM) of Japan, available on Google Earth Engine.
+**Sky openness** : In a country with a strong relief is less convenient than flat terrain to observe the horizon due to its active geomorphological processes, Japanese landscape is strongly impacted by this factor. Some valleys might have potential for high quality sky darkness, but have a high proportion of its sky being covered by mountainside, restricting the window of observation (Zakšek *et al.*, 2011). Sky openness data, also called sky view factor, was calculated based on the Digital Elevation Model (DEM) of Japan, available on Google Earth Engine.
 
-**Accessibility** : Accessibility models the time required for individuals to reach their most accessible city, as of 2015. It was integrated in the model to allow users to exclude remote locations from their prefecture, that are further than a chosen threshold from major towns. The data comes from the University of Twente in the Nederlands (Nelson *et al.*, 2018).
+**Accessibility** : Accessibility models the time required for individuals to reach their most accessible city, as of 2015. It was integrated in the model to allow users to exclude remote locations from their prefecture, that are further than a chosen threshold from major towns. The data comes from the University of Twente in the Nederlands (Weiss *et al.*, 2018).
 
-**Aerosol optical thickness** : Aerosol optical thickness, or optical depth, acts as a proxy for atmospheric pollution. Aerosols floating in the air such as PM2.5 can diminish the quality of observations. While light pollution determines the background "glow" of the sky, Aerosol Optical Thickness (AOT) determines the transparency of the atmosphere itself. In the context of HoshiMap, this variable acts as a proxy for both natural and anthropogenic atmospheric turbidity. The data was obtained through Jaxa's Earth-Graphy and originates from the 550 nanometers band of the MODIS sensor. Similarly to light pollution, data from July 2024 was used.
+**Aerosol optical thickness** : Aerosol optical thickness, or optical depth, acts as a proxy for atmospheric pollution. Aerosols floating in the air such as PM2.5 can diminish the quality of observations. While light pollution determines the background "glow" of the sky, Aerosol Optical Thickness (AOT) determines the transparency of the atmosphere itself (Levy *et al.*, 2009). In this dataset context, it is mostly between 0 and 4 (dimensionless). In the context of HoshiMap, this variable acts as a proxy for both natural and anthropogenic atmospheric turbidity. The data was obtained through Jaxa's Earth-Graphy and originates from the 550 nanometers band of the MODIS sensor. Similarly to light pollution, data from July 2024 was used (Siher *et al.*, 2004).
 
 **Hillshade** : Derived from the Digital Elevation Model, hillshade plays a visual role on the HoshiMap interface. It simulates the effects of the sun's illumination on the Japanese topography. In this application, it is used as a static background layer to provide topographical context. While not a variable that determines the mathematical "suitability" of a site, it allows users to intuitively understand the terrain they are analyzing. Unlike light pollution or accessibility, hillshade is a non-modifiable factor; it serves purely to enhance the 3D perception of the map, ensuring that the final rendering is both informative and recognizable.
 
@@ -40,15 +47,15 @@ Slope, even though it is highly related to altitude, has a completely different 
 
 ## *Pre-processing steps*
 
-Before the code itself, it is important to detail the steps that transformed the original and various datasets in a homogenous way. The first steps consisted of loading said datasets, merge tiled rasters, removing NA values, compressing rasters and creating output files. One operation could not be permormed using RStudio, being the creation of the Sky Openness raster from the DEM. While trying to run the operation, RStudio constantly crashed due to the high computational demand of the process. Instead, it was done and imported from QGIS, after 21 hours of processing. The aerosol optical depth was also divided by a factor of 10 000. This is because AOT is a unitless quantity (ratio of light intensity), and in usually expressed as a value between 1 and 5. The MODIS data followed this expression, but multiplied by the 10 000 multiplier.
+Before the code itself, it is important to detail the steps that transformed the original and various datasets in a homogenous way. The first steps consisted of loading said datasets, merge tiled rasters, removing NA values, compressing rasters and creating output files. One operation could not be permormed using RStudio, being the creation of the Sky Openness raster from the DEM. While trying to run the operation, RStudio constantly crashed due to the high computational demand of the process. Instead, it was done and imported from QGIS, after 21 hours of processing. The aerosol optical depth was also divided by a factor of 10 000. This is because AOT is a unitless quantity (ratio of light intensity), and in usually expressed as a value between 1 and 4. The MODIS data followed this expression, but multiplied by the 10 000 multiplier.
 
-After cleaning up the rasters and making sure all rasters were set to the standard WGS84 projection, they where all cropped to the national boundaries set by the japanese border shapefile, and every rasters were then aligned and standardized to the DEM resolution (27.72 meters per pixel side). Continuous datasets (optical depth, light pollution and accessibility) were resampled using a bilinear method, while the land use dataset, being discrete (14 classes) was resampled using the "nearest neighbour" method. The initial preprocessing code (available on the GitHub) includes projection verification and a chunk to find out why Okinawa (Japan offshore prefecture) displayed many processing errors. This is because some datasets originally did not include data for the distant prefecture. It was therefore decided not to include Okinawa in the project.
+After cleaning up the rasters and making sure all rasters were set to the standard WGS84 projection, they where all cropped to the national boundaries set by the japanese border shapefile, and every rasters were then aligned and standardized to the DEM resolution (27.72 meters per pixel side). Continuous datasets (optical depth, light pollution and accessibility) were resampled using a bilinear method, while the land use dataset, being discrete (14 classes) was resampled using the "nearest neighbour" method. The preprocessing code includes a chunk to find out why Okinawa (Japan offshore prefecture) displayed many processing errors. This is because some datasets originally did not include data for the distant prefecture. It was therefore decided not to include Okinawa in the project.
 
 After setting up loops to divide each dataset in the remaining 46 prefectures, the final outputs consisted of folders, with the common typology "VaribleName_prefectures" containing each 46 rasters named "VariableName_PrefectureName.tif". The shapefile was also divided according to prefectures. The entire output file was then manually uploaded to Google Drive. The sky openness, slope and hillshade were also created in a loop, all derived from the DEM.
 
 ## *Pre-processing code, from raw data to aligned rasters*
 
-Here is the code that can be used to recreate the same outputs as the ones used in HoshiMap
+Here is the code that can be used to recreate the same outputs as the ones used in HoshiMap.
 :::
 
 ```{r}
@@ -105,6 +112,41 @@ layers <- lapply(layers, function(r) {
   mask(r_crop, JP_Shp)
 })
 
+
+# ==============================================================================
+# EXCEPTION CHECK: OKINAWA DATA AVAILABILITY
+# ==============================================================================
+# Isolating Okinawa to check spatial overlap with our cleaned layers
+okinawa_vect <- JP_Shp[JP_Shp$name == "Okinawa", ]
+
+message("Checking data overlap for Okinawa...")
+
+overlap_results <- lapply(names(layers), function(lyr_name) {
+  r <- layers[[lyr_name]]
+  
+  # Check if the bounding boxes intersect
+  r_ext <- ext(r)
+  ok_ext <- ext(okinawa_vect)
+  
+  intersects <- !(ok_ext$xmax < r_ext$xmin || 
+                  ok_ext$xmin > r_ext$xmax || 
+                  ok_ext$ymax < r_ext$ymin || 
+                  ok_ext$ymin > r_ext$ymax)
+  
+  data.frame(
+    Layer = lyr_name,
+    Status = if(intersects) "OK" else "Missing Data",
+    stringsAsFactors = FALSE
+  )
+}) %>% do.call(rbind, .)
+
+print(overlap_results)
+
+# If any layer status is "Missing Data", the exclusion in the next loop is justified.
+if(any(overlap_results$Status == "Missing Data")) {
+  message("Warning: Incomplete data for Okinawa detected. Proceeding with exclusion.")
+}
+
 # ==============================================================================
 # PREFECTURE SPLITTING LOOP
 # ==============================================================================
@@ -113,7 +155,11 @@ for(i in 1:nrow(JP_Shp)) {
   pref      <- JP_Shp[i,]
   pref_name <- gsub("[^[:alnum:]_]", "_", pref$name[1])
   
-  if(pref_name == "Okinawa") next # Skipping due to coordinate mismatch
+  # This is the line that actually performs the skip based on your check above
+  if(pref_name == "Okinawa") {
+    message("Skipping Okinawa: Data overlap issues confirmed.")
+    next 
+  }
   
   message(paste("--- Processing Prefecture:", pref_name, "---"))
   
@@ -196,9 +242,7 @@ message("All pre-processing completed successfully.")
 
 Now that the data have been cleaned, the following part is composed of the explanations of the app and the two chunks of code described earlier. They are independently available on the GitHub repository linked above.
 
-Despite their relationships with stargazing, altitude and slope have not been utilized in the version of HoshiMap released here. This is because these two variables are less vital to the subject, and limiting the number of variables taken into the computational power drastically increases the speed of rendering of HoshiMap. Slope itself appeared to be strongly correlated with sky openness, making them collinear variables. However, even though it is not included in the released app, the data for both of those parameters is available in the Google Drive Folder and can be utilized for further analysis if needed.
-
-Altitude is harder to
+Despite their relationships with stargazing, altitude and slope have not been utilized in the version of HoshiMap released here. This is because these two variables are less vital to the subject, and limiting the number of variables taken into the computational power drastically increases the speed of rendering of HoshiMap. Slope itself appeared to be strongly correlated with sky openness, making them collinear variables. Altitude is harder to seamlessly include in the project because it is both advantageous to observation quality and a challenge for on-field accessibility. However, even though it is not included in the released app, the data for both of those parameters is available in the Google Drive Folder and can be utilized for further analysis if desired.
 
 ## *How to use HoshiMap*
 
@@ -208,21 +252,25 @@ The UI (User Interface) is split in two parts, the settings panel, and the visua
 
 -   Maximum travel time from major town (in minutes)
 
--   Maximum optical depth desired (from 0 to 4, unitless)
+-   Maximum optical depth desired (from 0 to 4, dimensionless)
 
 -   Maximum light pollution (in nanowatts per cm² per steradiant)
 
--   Minimum sky view coefficient (proportion of sky "open)
+-   Minimum sky view coefficient (proportion of sky "open")
 
-As the unit of light pollution is hard to grasp without any prior knowledge, here are some key thresholds that can be used to chose what quality the user is looking for. The interval between 0 and 1 is "True Darkness" and refers to areas where human influence is extremely weak on night sky quality, usually in rural areas. From 1 to 3, the quality is still good, but specific elements such as the Milky Way start to fade out when their elevation is close to the horizon. Entering areas with light pollution going from 3 to 20 is typical of suburban environments. From 20 *nW⋅cm−2⋅sr−1* onward, the quality becomes highly degraded, where only the Moon and planets can be observed reliably. Any area with a value above 50 renders any attempt at stargazing futile.
+As the unit of light pollution is hard to grasp without any prior knowledge, here are some key thresholds that can be used to chose what quality the user is looking for. The interval between 0 and 1 is "True Darkness" and refers to areas where human influence is extremely weak on night sky quality, usually in rural areas. From 1 to 3, the quality is still good, but specific elements such as the Milky Way start to fade out when their elevation is close to the horizon. Entering areas with light pollution going from 3 to 20 is typical of suburban environments. From 20 *nW⋅cm−2⋅sr−1* onward, the quality becomes highly degraded, where only the Moon and planets can be observed reliably. Any area with a value above 50 renders any attempt at stargazing futile (Falchi *et al.*, 2016 ; Green *et al.*, 2022).
 
 On top of these four sliders, the pixels associated with water bodies, forests and urban environments have been excluded from the potential areas, simply based on their nature. The different raster values associated with each land use cover have been transcribed as a list in the README file on GitHub, allowing users to modify the exclusion list (some people might want to include urban areas). The map panel of HoshiMap is dynamically updated after every slider change, while always excluding land use values chosen as unfit for observations.
 
-The last point
+The environment also includes three last elements, a semi-transparent hillshade to show landscape elevation, a filling symbology influenced by travel time to show locations with potential, and astronomical observatories associated with each prefecture. The observatories data have been fetched from NAOJ (National Astronomical Observatory of Japan) and other sporadic sources, and combined manually into a list of 64 observatories. As a prefecture is loaded, its observatories are shown on the map to allow for a comparison with potential areas. Their main observation category (optical / radar) is also indicated using a colour symbology. The obervatory points can be selected on the map to obtain more information.
+
+**Preview of Hoshimap :**
+
+![](images/clipboard-3121980817.png)
 
 ## *HoshiMap - Cloud Version*
 
-This version of HoshiMap is designed for maximum portability and accessibility, utilizing the googledrive package to stream geospatial assets directly from a centralized repository. By authenticating via a public root ID, the application dynamically fetches rasters and shapefiles on-demand. This approach eliminates the need for users to host large datasets locally. To ensure a smooth user experience, the code implements a reactive caching system, ensuring that once a prefecture's data is streamed, it remains stored in memory for instantaneous parameter adjustments and filtering.
+This version of HoshiMap is designed for maximum portability and accessibility, utilizing the googledrive package to stream geospatial assets directly from a centralized repository. By authenticating via a public root ID, the application dynamically fetches rasters and shapefiles on-demand. This approach eliminates the need for users to host large datasets locally. To ensure a good user experience, the code implements a reactive caching system, ensuring that once a prefecture's data is streamed, it remains stored in memory for instantaneous parameter adjustments and filtering.
 :::
 
 ```{r}
@@ -707,4 +755,20 @@ shinyApp(ui, server)
 ```
 ::::
 ::::::
+
+## References
+
+Falchi, F., Cinzano, P., Duriscoe, D., Kyba, C. C., Elvidge, C. D., Baugh, K., ... & Furgoni, R. (2016). The new world atlas of artificial night sky brightness. Science advances, 2(6), e1600377.
+
+Green, R. F., Luginbuhl, C. B., Wainscoat, R. J., & Duriscoe, D. (2022). The growing threat of light pollution to ground-based observatories. The Astronomy and Astrophysics Review, 30(1), 1.
+
+Hashimoto, T., et al. (2014). High-resolution land use and land cover map in Japan. JAXA Research and Development Report.
+
+Levy, R. C., Leptoukh, G. G., Kahn, R., Zubko, V., Gopalan, A., & Remer, L. A. (2009). A critical look at deriving monthly aerosol optical depth from satellite data. *IEEE Transactions on Geoscience and Remote Sensing*, *47*(8), 2942-2956.
+
+Siher, E. A., et al. (2004). Relationship between optical seeing and Aerosol Optical Depth. Monthly Notices of the Royal Astronomical Society.
+
+Weiss, D. (Corresponding Author), Nelson, A. D., Gibson, H. S., Temperley, W., Peedell, S., Lieber, A., Hancher, M., Poyart, E., Belchior, S., Fullman, N., Mappin, B., Dalrymple, U., Rozier, J., Lucas, T. C. D., Howes, R. E., Tusting, L. S., Kang, S. Y., Cameron, E., Bisanzio, D. & Battle, K. E. & 2 others, , 18 Jan 2018, In: Nature. 553, 7688, p. 333-336 4 p.
+
+Zakšek, K., et al. (2011). Sky-View Factor as a Relief Visualization Technique. Remote Sensing.
 ::::::::

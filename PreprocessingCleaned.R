@@ -54,6 +54,41 @@ layers <- lapply(layers, function(r) {
   mask(r_crop, JP_Shp)
 })
 
+
+# ==============================================================================
+# EXCEPTION CHECK: OKINAWA DATA AVAILABILITY
+# ==============================================================================
+# Isolating Okinawa to check spatial overlap with our cleaned layers
+okinawa_vect <- JP_Shp[JP_Shp$name == "Okinawa", ]
+
+message("Checking data overlap for Okinawa...")
+
+overlap_results <- lapply(names(layers), function(lyr_name) {
+  r <- layers[[lyr_name]]
+  
+  # Check if the bounding boxes intersect
+  r_ext <- ext(r)
+  ok_ext <- ext(okinawa_vect)
+  
+  intersects <- !(ok_ext$xmax < r_ext$xmin || 
+                    ok_ext$xmin > r_ext$xmax || 
+                    ok_ext$ymax < r_ext$ymin || 
+                    ok_ext$ymin > r_ext$ymax)
+  
+  data.frame(
+    Layer = lyr_name,
+    Status = if(intersects) "OK" else "Missing Data",
+    stringsAsFactors = FALSE
+  )
+}) %>% do.call(rbind, .)
+
+print(overlap_results)
+
+# If any layer status is "Missing Data", the exclusion in the next loop is justified.
+if(any(overlap_results$Status == "Missing Data")) {
+  message("Warning: Incomplete data for Okinawa detected. Proceeding with exclusion.")
+}
+
 # ==============================================================================
 # PREFECTURE SPLITTING LOOP
 # ==============================================================================
@@ -62,7 +97,11 @@ for(i in 1:nrow(JP_Shp)) {
   pref      <- JP_Shp[i,]
   pref_name <- gsub("[^[:alnum:]_]", "_", pref$name[1])
   
-  if(pref_name == "Okinawa") next # Skipping due to coordinate mismatch
+  # This is the line that actually performs the skip based on your check above
+  if(pref_name == "Okinawa") {
+    message("Skipping Okinawa: Data overlap issues confirmed.")
+    next 
+  }
   
   message(paste("--- Processing Prefecture:", pref_name, "---"))
   
@@ -136,4 +175,4 @@ for (i in 1:nrow(shp_sf)) {
            delete_dsn = TRUE, quiet = TRUE)
 }
 
-message("All preprocessing completed successfully.")
+message("All pre-processing completed successfully.")

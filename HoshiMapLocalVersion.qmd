@@ -16,7 +16,7 @@ More information regarding the project can be found in *HoshiMapMainProject* on 
 
 ```{r}
 if (!require("pacman")) install.packages("pacman")
-pacman::p_load(terra, sf, leaflet, shiny, shinythemes, bslib)
+pacman::p_load(terra, sf, leaflet, shiny, bslib, ggplot2, ggnewscale, tidyterra)
 
 # ========================== BASE PATH ==========================
 base_path <- "Drive"
@@ -67,7 +67,23 @@ ui <- fluidPage(
       sliderInput("access", "Max Travel Time (minutes)", 0, 120, 45),
       sliderInput("optical", "Max Optical Depth", 0, 4, 0.8, 0.1),
       sliderInput("light", "Max Light Pollution", 0, 50, 20),
-      sliderInput("sky", "Min Sky View", 0, 1, 0.8)
+      sliderInput("sky", "Min Sky View", 0, 1, 0.8),
+      tags$style(HTML("
+  #downloadMap {
+    background-color: #FFD700;
+    color: #0B0C10;
+    font-weight: bold;
+    border: none;
+    width: 100%;
+    margin-top: 20px;
+    transition: all 0.3s ease;
+  }
+  #downloadMap:hover {
+    background-color: #FFFFFF;
+    box-shadow: 0 0 15px #FFD700;
+  }
+")),
+downloadButton("downloadMap", "Export This Map!")
     ),
     
     mainPanel(
@@ -88,7 +104,63 @@ server <- function(input, output, session) {
   )
   
   updateSelectInput(session, "pref", choices = prefs)
-  
+output$downloadMap <- downloadHandler(
+  filename = function() {
+    paste0("HoshiMap_", input$pref, "_", Sys.Date(), ".png")
+  },
+  content = function(file) {
+    r <- result_raster() 
+    contour <- get_contour(input$pref)
+    obs <- obs_filtered()
+    
+    p <- ggplot() +
+      # Couche d'analyse (Raster)
+      geom_spatraster(data = r) +
+      scale_fill_viridis_c(
+        option = "mako", 
+        direction = -1, 
+        name = "Travel Time\n(Minutes)", 
+        na.value = "transparent"
+      ) +
+      
+      {if(!is.null(contour)) geom_sf(
+        data = contour, 
+        fill = NA, 
+        color = "white", 
+        linewidth = 0.5
+      )} +
+      
+      geom_point(
+        data = obs, 
+        aes(x = Longitude, y = Latitude), 
+        color = "#FFD700", 
+        size = 3,
+        shape = 18
+      ) +
+      
+      labs(
+        title = paste("HoshiMap:", input$pref),
+        subtitle = paste0(
+          "Travel < ", input$access, "m | ",
+          "Optical Depth < ", input$optical, " | ", # Ajouté ici
+          "Light Pollution < ", input$light, " | ", # Corrigé ici
+          "Sky View > ", input$sky
+        ),
+        caption = "Generated via HoshiMap Local"
+      ) +
+      theme_void() +
+      theme(
+        plot.background = element_rect(fill = "#0B0C10", color = NA),
+        panel.background = element_rect(fill = "#0B0C10", color = NA),
+        text = element_text(color = "white"),
+        plot.title = element_text(hjust = 0.5, face = "bold", size = 20, margin = margin(t = 10, b = 5)),
+        plot.subtitle = element_text(hjust = 0.5, size = 10, color = "#CCCCCC", margin = margin(b = 10)),
+        legend.position = "right"
+      )
+    
+    ggsave(file, plot = p, width = 12, height = 10, dpi = 300, device = "png")
+  }
+)
 # ======================== OBSERVATORIES ========================
   observatories <- read.csv(file.path(base_path, "Observatories.csv"), stringsAsFactors = FALSE)
   

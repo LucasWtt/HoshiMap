@@ -13,7 +13,9 @@ execute:
 
 ***GitHub** :* *https://github.com/LucasWtt/HoshiMap*
 
-***Google Drive Folder**: https://drive.google.com/drive/folders/1iwF9XNg6ltKaJH5gH9Hwz0whuSO3HgM7*
+***Google Drive Folder**:*
+
+*https://drive.google.com/drive/folders/1iwF9XNg6ltKaJH5gH9Hwz0whuSO3HgM7*
 
 The objective of this application is to identify and highlight the most promising places in any Japanese prefecture to conduct amateur astronomical observations. The quarto format offers a satisfying way to integrate text and code chunks, with this specific quarto being divided in three main parts. The first one describes the steps taken from data acquisition to cloud storage creation, and the second encompasses the app itself in two versions, either running on local or cloud data. Shiny has been used to run the app, and everything is written in R language and can be executed from RStudio.
 

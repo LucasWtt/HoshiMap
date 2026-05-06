@@ -12,18 +12,19 @@ Informations about the project itself (data origin, method followed, advised thr
 List of raster values associated with land use coverages (JAXA Simplified Classification) :
 
 Raster Value | Land Use Name
-1. Water	
-2. Paddy field	Paddy field
-3. Cropland	Cropland
-4. Grassland	Grassland
-5. Deciduous broadleaf forest	Forest
-6. Deciduous needleleaf forest	
-7. Evergreen broadleaf forest	
-8. Evergreen needleleaf forest	
-9. Bamboo forest	
-10. Bare	Bare
-11. Wetland	Wetland
-12. Built-up	Built-up
-13. Solar panel	
-14. Greenhouse	
+1. Water
+2. Built-up
+3. Paddy field
+4. Cropland
+5. Grassland
+6. Deciduous broadleaf forest
+7. Deciduous needleleaf forest	
+8. Evergreen broadleaf forest	
+9. Evergreen needleleaf forest	
+10. Bare soil	
+11. Bamboo forest
+12. Wetland
+13. Solar panel
+14. Greenhouse
 
+In the base application, values 1, 2, 6, 7, 8, 9 and 11 were removed.

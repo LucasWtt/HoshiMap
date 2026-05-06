@@ -1,5 +1,6 @@
 # HoshiMap Project
 This project aims to highlight locations across Japan that are promissing for any stargazing activities, based on major criteria and thresholds set by the user. Everything is written using R.
+This tool helps anyone find prime locations in a prefecture depending on various criteria, and visualize and download the associated map.
 
 The repository is composed of :
   One Quarto file being the project itself (HoshiMapMainProject), which contains all the explanatory information and all the code blocks except for the initial preprocessing code.

@@ -16,7 +16,7 @@ More information regarding the project can be found in *HoshiMapMainProject* on 
 
 ```{r}
 if (!require("pacman")) install.packages("pacman")
-pacman::p_load(terra, sf, leaflet, shiny, shinythemes, bslib, googledrive)
+pacman::p_load(terra, sf, leaflet, shiny, shinythemes, bslib, googledrive, ggplot2, tidyterra)
 
 # ====================== PUBLIC DRIVE SETUP =====================
 drive_deauth() 
@@ -91,7 +91,23 @@ ui <- fluidPage(
       sliderInput("access", "Max Travel Time (min)", 0, 120, 45),
       sliderInput("optical", "Max Optical Depth", 0, 4, 0.8, 0.1),
       sliderInput("light", "Max Light Pollution", 0, 50, 20),
-      sliderInput("sky", "Min Sky View", 0, 1, 0.8)
+      sliderInput("sky", "Min Sky View", 0, 1, 0.8),
+      tags$style(HTML("
+        #downloadMap {
+          background-color: #FFD700;
+          color: #0B0C10;
+          font-weight: bold;
+          border: none;
+          width: 100%;
+          margin-top: 20px;
+          transition: all 0.3s ease;
+        }
+        #downloadMap:hover {
+          background-color: #FFFFFF;
+          box-shadow: 0 0 15px #FFD700;
+        }
+      ")),
+      downloadButton("downloadMap", "Export This Map!")
     ),
     mainPanel(leafletOutput("map", height = 700))
   )
@@ -101,7 +117,6 @@ ui <- fluidPage(
 
 server <- function(input, output, session) {
   
-  # Populate Prefectures
   observe({
     acc_folder <- drive_ls(drive_root_id, pattern = "Accessibility_prefectures")
     if(nrow(acc_folder) > 0) {
@@ -168,17 +183,77 @@ server <- function(input, output, session) {
     
     res <- mask(r$access, valid, maskvalues = 0)
     
-    # Process Hillshade
     hill <- r$hillshade
     if (!is.null(hill)) {
       hill <- aggregate(hill, fact = VIS_FACT, fun = mean, na.rm = TRUE)
     }
     
     list(
+      raw_result = res, # Keep high-res for export
       result = aggregate(res, fact = VIS_FACT, fun = mean, na.rm = TRUE),
       hillshade = hill
     )
   })
+
+  # ======================== EXPORT HANDLER =====================
+  output$downloadMap <- downloadHandler(
+    filename = function() {
+      paste0("HoshiMap_", input$pref, "_", Sys.Date(), ".png")
+    },
+    content = function(file) {
+      req(input$pref)
+      data_list <- result_rasters()
+      r_high <- data_list$raw_result
+      contour <- get_pref_contour(input$pref)
+      obs <- observatories_data()
+      obs_sub <- subset(obs, Prefecture == input$pref)
+      
+      p <- ggplot() +
+        geom_spatraster(data = r_high) +
+        scale_fill_viridis_c(
+          option = "mako", 
+          direction = -1, 
+          name = "Travel Time\n(Minutes)", 
+          na.value = "transparent"
+        ) +
+        {if(!is.null(contour)) geom_sf(
+          data = contour, 
+          fill = NA, 
+          color = "white", 
+          linewidth = 0.5
+        )} +
+        geom_point(
+          data = obs_sub, 
+          aes(x = Longitude, y = Latitude), 
+          color = "#FFD700", 
+          size = 3,
+          shape = 18
+        ) +
+        labs(
+          title = paste("HoshiMap:", input$pref),
+          subtitle = paste0(
+            "Travel < ", input$access, "m | ",
+            "Optical Depth < ", input$optical, " | ",
+            "Light Pollution < ", input$light, " | ",
+            "Sky View > ", input$sky
+          ),
+          caption = "Generated via HoshiMap Cloud"
+        ) +
+        theme_void() +
+        theme(
+          plot.background = element_rect(fill = "#0B0C10", color = NA),
+          panel.background = element_rect(fill = "#0B0C10", color = NA),
+          text = element_text(color = "white"),
+          plot.title = element_text(hjust = 0.5, face = "bold", size = 20, margin = margin(t = 10, b = 5)),
+          plot.subtitle = element_text(hjust = 0.5, size = 10, color = "#CCCCCC", margin = margin(b = 10)),
+          legend.position = "right",
+          legend.text = element_text(color = "white"),
+          legend.title = element_text(color = "white")
+        )
+      
+      ggsave(file, plot = p, width = 12, height = 10, dpi = 300, device = "png")
+    }
+  )
 
   # ============================ MAP ============================
   output$map <- renderLeaflet({
@@ -201,22 +276,18 @@ server <- function(input, output, session) {
     m <- leaflet() %>%
       addProviderTiles("CartoDB.DarkMatter")
     
-    # Add Hillshade Overlay first (background)
     if (!is.null(hill_viz)) {
       m <- m %>% addRasterImage(hill_viz, opacity = 0.35, project = TRUE, colors = "Greys")
     }
     
-    # Add Analysis Raster
     m <- m %>% addRasterImage(res_viz, colors = pal, opacity = 0.7, project = TRUE)
     
-    # Add Boundary
     if (!is.null(contour)) {
       m <- m %>% addPolygons(
         data = contour, color = "white", weight = 2, fillOpacity = 0
       )
     }
 
-    # Add Markers
     if (nrow(obs_sub) > 0) {
       m <- m %>% addCircleMarkers(
         data = obs_sub, lng = ~Longitude, lat = ~Latitude,

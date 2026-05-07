@@ -281,7 +281,10 @@ server <- function(input, output, session) {
     }
     
     m <- m %>% addRasterImage(res_viz, colors = pal, opacity = 0.7, project = TRUE)
-    
+    m <- m %>% addScaleBar(
+    position = "bottomleft", 
+    options = scaleBarOptions(metric = TRUE, imperial = FALSE)
+  )
     if (!is.null(contour)) {
       m <- m %>% addPolygons(
         data = contour, color = "white", weight = 2, fillOpacity = 0

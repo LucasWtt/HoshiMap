@@ -271,7 +271,12 @@ output$downloadMap <- downloadHandler(
     )
     
     m <- leaflet() %>%
-      addProviderTiles("CartoDB.DarkMatter")
+      addProviderTiles("CartoDB.DarkMatter") %>%
+      # --- ADD SCALE BAR HERE ---
+      addScaleBar(
+        position = "bottomleft", 
+        options = scaleBarOptions(metric = TRUE, imperial = FALSE)
+      )
     
     # Hillshade
     if (!is.null(hill)) {
@@ -293,6 +298,7 @@ output$downloadMap <- downloadHandler(
           fill = FALSE
         )
     }
+    
     
 # ========================= OBSERVATORIES =======================
     if (nrow(obs) > 0) {

@@ -134,7 +134,7 @@ layers <- lapply(layers, function(r) {
 # ==============================================================================
 # EXCEPTION CHECK: OKINAWA DATA AVAILABILITY
 # ==============================================================================
-# Isolating Okinawa to check spatial overlap with our cleaned layers
+# Isolating Okinawa to check spatial overlap with cleaned layers
 okinawa_vect <- JP_Shp[JP_Shp$name == "Okinawa", ]
 
 message("Checking data overlap for Okinawa...")
@@ -173,7 +173,6 @@ for(i in 1:nrow(JP_Shp)) {
   pref      <- JP_Shp[i,]
   pref_name <- gsub("[^[:alnum:]_]", "_", pref$name[1])
   
-  # This is the line that actually performs the skip based on your check above
   if(pref_name == "Okinawa") {
     message("Skipping Okinawa: Data overlap issues confirmed.")
     next 
@@ -262,13 +261,13 @@ Now that the data have been cleaned, the following part is composed of the expla
 
 The workflow of the application can be summarized in four stages:
 
-1.   Loading prefecture-specific raster datasets
+1.  Loading prefecture-specific raster datasets
 
-2.   Applying Boolean suitability filters
+2.  Applying Boolean suitability filters
 
-3.   Aggregating rasters for visualization performance
+3.  Aggregating rasters for visualization performance
 
-4.   Rendering interactive layers in Leaflet
+4.  Rendering interactive layers in Leaflet
 
 Despite their relationships with stargazing, altitude and slope have not been utilized in the version of HoshiMap released here. This is because these two variables are less vital to the subject, and limiting the number of variables taken into the computational power drastically increases the speed of rendering of HoshiMap. Technically, this reduces raster stack size and memory consumption. In R, raster operations scale with the number of layers and the resolution of each layer. By excluding slope and altitude, aggregation and masking operations execute faster and require less RAM when using the terra package.
 
